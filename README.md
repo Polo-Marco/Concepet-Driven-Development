@@ -295,13 +295,7 @@ STATE.md replaced Concept.md as the single source of operational state. It inclu
 - **Active Skills** — which skill files to load for the current work.
 - **Blocked** — present only when the Generator has halted on a boundary violation.
 
-### Bespoke Skills
-
-During Spec phase, the Planner generates project-specific skills with:
-
-- **Canonical file structure** — the Generator can't create files outside it
-- **Copy-paste code patterns** — using your project's actual types and names
-- **DO / DO NOT rules** — binary, no judgment calls required
+### Bespoke Sk— binary, no judgment calls required
 - **Error handling contracts** — exactly what to raise and catch
 - **Testing conventions** — naming, fixtures, minimum coverage
 - **Exact commands** — every CLI command, ready to paste
@@ -319,6 +313,94 @@ This framework uses a three-layer evaluation approach:
 **Layer 3 — You:** No commit happens without your approval. You review test results, run manual checks, and decide whether the work meets your standards. The Global Test Phase at the end of every plan is exclusively yours to run.
 
 The framework deliberately avoids automated self-evaluation because agents evaluate their own work poorly. Separating the builder from the judge — and making the judge human — produces better outcomes for projects at this complexity level.
+
+## Applying to an Existing Codebase
+
+The framework assumes it built the project from scratch. If you're
+dropping it into an existing codebase — one you built manually, that
+another AI generated, or that runs an older framework version — you
+need a bootstrap step first.
+
+### Migrating from an Older Framework Version (v5.0–5.2)
+
+If your project already has framework artifacts (Concept.md, old-format
+Plan.md, STATE.md without a Project Summary, skills using "Good Model /
+Ok Model" terminology):
+
+1. Drop the v5.3 framework files into the project root (`CLAUDE.md`,
+   `.claude/rules/`, `skills/mode-*`, `skills/skill-template`,
+   `skills/state-schema`), overwriting old framework infrastructure.
+2. **Keep** your existing `Architecture.md`, `Plan.md`, and
+   project-specific skills (like `skills/fastapi-backend/`) — don't
+   delete them yet.
+3. Start a Planner session:
+
+```
+/modify Migrate this project's framework artifacts from v5.x to v5.3.
+Read the existing Architecture.md and any Concept.md, Plan.md, and
+skills. Rewrite STATE.md with a Project Summary synthesized from the
+existing docs. Update project-specific skills to match the v5.3
+skill-template standard. Delete Concept.md after migrating its content
+into the Project Summary.
+```
+
+The Planner reads everything, synthesizes it into the v5.3 format,
+and you're running the new framework. Existing application code
+is untouched — only the metadata layer changes.
+
+### Bootstrapping a Codebase with No Framework
+
+If your project has no framework artifacts at all — just source code,
+maybe some tests, maybe a README:
+
+1. Drop the v5.3 framework files into the project root.
+2. Start a Planner session:
+
+```
+/build Bootstrap this existing codebase into the Vibe Coding 5.3
+framework. Do NOT write any application code. Read the existing
+source tree, then produce:
+1. Architecture.md documenting the current system as-is
+2. STATE.md with a Project Summary and tech stack
+3. Bespoke skills for the existing stack and conventions
+Mark all existing code as completed in STATE.md Phase History.
+```
+
+The Planner reverse-engineers the architecture from the code, documents
+it, generates skills that match the existing patterns, and sets up
+STATE.md as if the project had been built with the framework from the
+start. No application code changes — just the metadata layer.
+
+After bootstrapping, `/modify` and `/debug` work normally because
+the Planner has Architecture.md to check conflicts against and skills
+that reflect the actual codebase.
+
+### Important: Skills Must Match Reality
+
+When bootstrapping, the generated skills should describe patterns
+the codebase **already uses**, not patterns the framework wishes
+it used. If the existing code uses raw SQL instead of an ORM, the
+skill documents raw SQL patterns. If it catches generic exceptions
+everywhere, the skill documents that reality.
+
+The DO NOT list in skills can flag existing anti-patterns as tech
+debt to clean up later via `/modify`. But the skill's patterns must
+match the code as it is today, or the Generator will fight the
+codebase during execution.
+
+### After Bootstrap: First Real Task
+
+Once bootstrap is complete, your first real task should be small:
+
+```
+/modify Add input validation to the /users endpoint
+```
+
+This lets you verify that the Planner correctly understood the
+architecture and that the Generator follows the generated skills
+without deviating. If the Generator produces code that clashes with
+existing conventions, the skills need tightening — better to discover
+that on a small change than a large feature.
 
 ## Version History
 
