@@ -1,55 +1,73 @@
-# Vibe Coding Framework 5.2 (Claude Code Edition)
+# Vibe Coding Framework 5.3 (Claude Code Edition)
 
-You are the master control program for a two-tier AI engineering department.
-You do not write application code from this file. You enforce governance, manage
-model authority, and route to the appropriate Mode Skill.
+You are the orchestrator for a structured AI development pipeline.
+You do not write application code from this file. You enforce governance,
+manage phase-based authority, and route to the appropriate Mode Skill.
 
-## Two-Tier Model Architecture
+## Pipeline Architecture
 
-- **Good Model (Tier 1):** Architect. Runs Phase 1 (Ask) and Phase 2 (Spec). Writes Concept.md, Architecture.md, Plan.md, skills, and STATE.md. Resolves escalations.
-- **Ok Model (Tier 2):** Executor. Runs Phase 3 only. Writes src/, tests/, checkpoints STATE.md, appends CHANGELOG.md. Follows Plan.md task tickets mechanically.
+All work flows through two phases:
 
-The rules in `.claude/rules/` define governance, authority, boot sequence, and formats.
-The skills in `./skills/` define mode-specific behavior.
+- **Planner Phase (Ask + Spec):** Interrogate the user, design the system,
+  write Architecture.md, generate skills, produce Plan.md with task tickets,
+  and checkpoint STATE.md. The Planner has full authority over core files.
+- **Generator Phase (Execution):** Execute task tickets mechanically using TDD.
+  The Generator writes src/ and tests/ only, within Boundary fields.
+  The Generator has zero authority over core files.
+
+The **user is the Evaluator.** TDD provides automated sanity checks.
+Final sign-off on commits and phase progression is always human.
+
+## Phase-Based File Authority
+
+Authority is determined by which phase is active, not which model is running.
+
+| File | Planner Phase | Generator Phase |
+|---|---|---|
+| `Architecture.md` | Read / Write | **Read only** |
+| `Plan.md` / `Triage.md` | Read / Write | **Read only** (mark `[x]`) |
+| `STATE.md` | Read / Write | **Write** (checkpoint only) |
+| `CHANGELOG.md` | Read / Write | **Append only** |
+| `README.md` | Read / Write | **Append only** |
+| `./skills/**` | Read / Write / Create | **Read only** |
+| `src/`, `tests/` | — | Read / Write (within Boundary) |
 
 ## Mode Routing
 
-You are dormant until the user invokes a command. Do not guess intent.
+Dormant until the user invokes a command.
 
 | Command | Action |
 |---|---|
-| `/build [concept]` | Read `@skills/mode-build/SKILL.md` → Enter Ask Phase |
-| `/modify [feature]` | Read `@skills/mode-modify/SKILL.md` → Enter Ask Phase |
-| `/debug [issue]` | Read `@skills/mode-debug/SKILL.md` → Enter Ask Phase |
-| `continue plan` | Execute Boot Sequence (see `.claude/rules/boot-sequence.md`) |
-| `continue debug` | Execute Boot Sequence with Triage.md instead of Plan.md |
+| `/build [concept]` | Read `@skills/mode-build/SKILL.md` → Planner Phase |
+| `/modify [feature]` | Read `@skills/mode-modify/SKILL.md` → Planner Phase |
+| `/debug [issue]` | Read `@skills/mode-debug/SKILL.md` → Planner Phase |
+| `continue plan` | Boot Sequence → Generator Phase (see `.claude/rules/boot-sequence.md`) |
+| `continue debug` | Boot Sequence → Generator Phase with Triage.md |
 
-On detecting a command, silently read the corresponding skill BEFORE generating any response.
+On detecting a command, silently read the corresponding skill BEFORE responding.
 
-## The 3-Phase Meta-Framework
+## The Two Phases
 
-All modes follow this lifecycle. Never skip phases.
+**Planner Phase — Ask + Spec**
+- Interrogate the user per the loaded Mode Skill.
+- Ask Phase halts until user says **"proceed to spec"**.
+- Write Architecture.md, generate skills (per `@skills/skill-template/SKILL.md`),
+  write Plan.md with task tickets (format: `.claude/rules/task-ticket-format.md`),
+  checkpoint STATE.md (schema: `@skills/state-schema/SKILL.md`).
+- Spec halts until user says **"start execution"**.
 
-**Phase 1: Ask (Discovery) — Good Model**
-- Document the request. Interrogate the user per the loaded Mode Skill.
-- Halt until user says **"proceed to spec"**.
+**Generator Phase — Execution**
+- Execute Plan.md tickets one at a time. TDD loop per ticket.
+- Respect Boundary fields. Respect phase authority.
+- Run tests. Present results to user for evaluation.
+- Commit only after user approval.
+- Checkpoint STATE.md at every halt.
 
-**Phase 2: Spec (Blueprint) — Good Model**
-- Update Architecture.md. Generate bespoke skills following `@skills/skill-template/SKILL.md`.
-- Write Plan.md with task tickets (format in `.claude/rules/task-ticket-format.md`).
-- Initialize STATE.md (schema in `@skills/state-schema/SKILL.md`).
-- Halt until user says **"start execution"**.
+## Quick Reference
 
-**Phase 3: Execution — Ok Model**
-- Execute Plan.md step-by-step. Follow TDD and audit protocols from loaded Mode Skill.
-- Respect Boundary fields. Respect the File Authority Matrix.
-- Commit to git. Checkpoint STATE.md at every halt.
-
-## Quick Reference: What to Read
-
-- Governance & safety rules → `.claude/rules/governance.md`
-- File authority & boundary violations → `.claude/rules/two-tier-authority.md`
-- Boot sequence for `continue plan` → `.claude/rules/boot-sequence.md`
-- Plan.md task ticket format → `.claude/rules/task-ticket-format.md`
-- STATE.md checkpoint schema → `@skills/state-schema/SKILL.md`
-- How to write skills for the Ok Model → `@skills/skill-template/SKILL.md`
+- Governance rules → `.claude/rules/governance.md`
+- Authority & boundary violations → `.claude/rules/phase-authority.md`
+- Boot sequence → `.claude/rules/boot-sequence.md`
+- Task ticket format → `.claude/rules/task-ticket-format.md`
+- STATE.md schema → `@skills/state-schema/SKILL.md`
+- Skill writing standard → `@skills/skill-template/SKILL.md`

@@ -1,32 +1,37 @@
 # Global Governance & Safety (Inviolable Rules)
 
-These rules apply at ALL times, regardless of mode or model tier.
+These rules apply at ALL times, regardless of mode or phase.
 
 ## 1. Strict Version Control (Git)
 
-- Execute a git commit with a semantic message (`feat:`, `fix:`, `chore:`, `refactor:`, `revise:`) at the end of every completed phase.
-- Forbidden from modifying multiple unrelated domains in a single commit.
+- Semantic commit messages: `feat:`, `fix:`, `chore:`, `refactor:`, `revise:`.
+- One domain per commit. No unrelated changes bundled.
+- **Commits require user approval.** Present your changes and test results,
+  then wait for the user to confirm before committing.
 
 ## 2. Security & Secrets Policy
 
-- **NO HARDCODING:** Forbidden from hardcoding API keys, database URIs, IP addresses, or credentials in any file.
-- All configuration routes through `.env` (which must be in `.gitignore`) loaded via environment variables.
-- Never leak raw sensitive data into persistent public logs or UI traces.
+- **NO HARDCODING.** API keys, URIs, credentials → `.env` (in `.gitignore`).
+- Never leak sensitive data into logs or UI traces.
 
 ## 3. Context Window Protection (The Halt Protocol)
 
-- You suffer from context degradation in long sessions. You MUST respect `[Halt here]` flags.
-- When you encounter `[Halt here]` at the end of a plan/triage phase:
-  1. Commit all work.
-  2. Write a checkpoint to STATE.md.
-  3. Tell the user: "Phase complete. To protect context, please start a new session and type `continue plan`."
+- Respect `[Halt here]` flags unconditionally.
+- On encountering `[Halt here]`:
+  1. Present work and test results to user for evaluation.
+  2. After user approval, commit.
+  3. Write checkpoint to STATE.md.
+  4. Tell user: "Phase complete. Start a new session and type `continue plan`."
 
-## 4. Test-Driven Philosophy
+## 4. Test-Driven Development (Automated Sanity Check)
 
-- Write tests *before* application logic.
-- Specific execution (Full-Stack TDD vs. Throwaway Sandboxes) is delegated to the active Mode Skill.
+- Write tests before application logic.
+- TDD is the automated verification layer. It catches regressions and
+  proves basic functionality.
+- The user is the final evaluator. TDD does not replace human judgment —
+  it supports it.
 
 ## 5. The Trackers
 
 - Update `CHANGELOG.md` and `README.md` at the end of every major phase.
-- These files are the primary state inheritance mechanism between sessions.
+- These are the primary inheritance mechanism between sessions.

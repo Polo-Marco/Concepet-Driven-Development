@@ -1,207 +1,188 @@
-# Vibe Coding Framework 5.2 — Claude Code Edition
+# Vibe Coding Framework 5.3
 
-A structured AI development framework that splits system design from implementation across two model tiers. The Good Model architects. The Ok Model executes. The framework is the contract between them.
+A structured AI development framework that separates planning from execution and puts you in charge of evaluation. The Planner designs. The Generator builds. You decide when it's done.
 
-Adapted for [Claude Code](https://code.claude.com), Anthropic's terminal-based coding agent.
+## The Problem
 
-## Why This Exists
+AI coding agents fail in predictable ways:
 
-Standard AI coding suffers from three failure modes:
+1. **Context collapse.** The agent forgets its own decisions mid-session and contradicts itself.
+2. **Architectural hallucination.** Without a planning phase, the agent invents your architecture and writes spaghetti.
+3. **Poor self-evaluation.** Agents confidently approve their own mediocre work. Separating the judge from the builder is the fix.
 
-1. **Context collapse.** The AI forgets its own decisions mid-session and starts contradicting itself.
-2. **Architectural hallucination.** Without a planning phase, the AI guesses your architecture and writes spaghetti.
-3. **Cost inefficiency.** Using a top-tier model for every line of boilerplate code burns budget on work that doesn't require intelligence.
-
-This framework solves all three by enforcing a strict planning-then-execution pipeline, externalizing the AI's "working memory" into structured files, and splitting work between an expensive model (for design) and a cheap model (for implementation).
+This framework solves all three by enforcing a strict Planner → Generator pipeline, externalizing the agent's working memory into structured files, and making you the final evaluator of every change.
 
 ## How It Works
 
-### The Two-Tier Model
+### The Pipeline
 
-| | Good Model (Tier 1) | Ok Model (Tier 2) |
+Every task — build, modify, or debug — flows through the same two-phase pipeline:
+
+```
+Planner Phase                    Generator Phase
+(Ask + Spec)                     (Execution)
+
+ Interrogate user                 TDD loop per ticket
+ Design architecture      ──→    Present results to user
+ Write task tickets               User evaluates
+ Generate skills                  Commit after approval
+ Checkpoint STATE.md              Halt at [Halt here]
+```
+
+**Planner Phase** has full authority over core files (Architecture.md, Plan.md, skills, STATE.md). It designs, plans, and produces blueprints precise enough for mechanical execution.
+
+**Generator Phase** has zero authority over core files. It reads task tickets from Plan.md and executes them literally. If it encounters a gap in the spec, it halts — it never improvises.
+
+**You are the Evaluator.** The Generator runs automated tests as a sanity check, then presents results and a manual verification checklist. You decide whether to approve the commit.
+
+### Phase-Based Authority
+
+Authority is determined by which phase is active, not which model is running. The same model can run both phases — the rules bind to the phase.
+
+| File | Planner Phase | Generator Phase |
 |---|---|---|
-| **Role** | Architect, Spec Author, Skill Creator | Code Implementer, Test Writer |
-| **Phases** | Phase 1 (Ask) + Phase 2 (Spec) | Phase 3 (Execution) |
-| **Cost** | Expensive, used sparingly | Cheap, used for volume work |
-| **Example** | Sonnet 4.6 | Haiku 4.5 |
-
-The Good Model writes the blueprints. The Ok Model follows them mechanically. The Ok Model is **never allowed** to make architectural decisions — if it encounters a gap in the spec, it halts and escalates.
-
-### The Three Phases
-
-```
-Phase 1: Ask ──── Phase 2: Spec ──── Phase 3: Execution
-(Good Model)      (Good Model)       (Ok Model)
-
- Interrogate        Architecture.md     TDD loop per
- the user    ──→    Plan.md         ──→ task ticket
- Document in        Skills              Commit + checkpoint
- Concept.md         STATE.md            Halt at [Halt here]
-```
-
-**Phase 1 — Ask:** The Good Model interviews you about requirements, tech stack, testing frameworks, data models, and edge cases. Nothing gets built until ambiguity is eliminated.
-
-**Phase 2 — Spec:** The Good Model writes `Architecture.md` (system design), generates bespoke skills with copy-paste code patterns for the Ok Model, and creates `Plan.md` with detailed task tickets. Each ticket specifies exact inputs, outputs, function signatures, test contracts, and file boundaries.
-
-**Phase 3 — Execution:** The Ok Model picks up `Plan.md` and executes one task ticket at a time using TDD (write failing test → implement → pass). It commits after each step and halts at `[Halt here]` flags to prevent context degradation.
+| Architecture.md | Read / Write | Read only |
+| Plan.md / Triage.md | Read / Write | Read only (mark `[x]`) |
+| STATE.md | Read / Write | Checkpoint only |
+| CHANGELOG.md | Read / Write | Append only |
+| skills/ | Read / Write / Create | Read only |
+| src/, tests/ | — | Read / Write (within Boundary) |
 
 ### The Three Modes
 
-| Command | Persona | Use When |
-|---|---|---|
-| `/build [concept]` | The Architect | Starting a new project from scratch |
-| `/modify [feature]` | The Refactoring Engineer | Adding features or changing existing code |
-| `/debug [issue]` | The QA Lead | Hunting and fixing bugs |
+All three modes use the same Planner → Generator pipeline. They differ in persona and focus:
 
-Each mode loads a dedicated skill file that defines the specific workflow, audit checks, and testing strategy for that type of work.
+| Command | Persona | Focus |
+|---|---|---|
+| `/build [concept]` | The Architect | 0-to-1 creation from scratch |
+| `/modify [feature]` | The Refactoring Engineer | Feature additions, architectural shifts, backwards compatibility |
+| `/debug [issue]` | The QA Lead | Root-cause analysis, hypothesis-driven bug fixing |
+
+**The Architect** scopes a new project from a raw idea. The Planner interrogates you about requirements, designs the full architecture, generates project-specific skills, and writes a detailed execution plan.
+
+**The Refactoring Engineer** modifies an existing system. The Planner reads the current architecture first, detects conflicts between your request and the existing design, updates the spec surgically, and adds regression-aware task tickets.
+
+**The QA Lead** investigates bugs. The Planner classifies the bug (permanent regression test vs throwaway sandbox), formulates hypotheses with test tickets, and enforces one-hypothesis-at-a-time execution. It uses Triage.md instead of Plan.md.
 
 ## File Structure
 
 ```
 your-project/
-├── CLAUDE.md                 ← Router (auto-loaded every session, ~55 lines)
+├── CLAUDE.md                       ← Router (auto-loaded, ~73 lines)
 ├── .claude/
 │   └── rules/
-│       ├── governance.md     ← Git, security, TDD, halt protocol (auto-loaded)
-│       ├── two-tier-authority.md  ← File authority matrix, boundary rules
-│       ├── boot-sequence.md  ← Re-hydration protocol for continue plan
-│       └── task-ticket-format.md  ← Plan.md step format reference
+│       ├── governance.md           ← Git, security, TDD, user evaluation
+│       ├── phase-authority.md      ← File authority matrix, boundary rules
+│       ├── boot-sequence.md        ← Re-hydration protocol for continue plan
+│       └── task-ticket-format.md   ← Plan.md step format + Manual Verification
 ├── skills/
-│   ├── skill-template/       ← Meta-skill: how to write skills for the Ok Model
-│   │   └── SKILL.md
-│   ├── state-schema/         ← STATE.md checkpoint format reference
-│   │   └── SKILL.md
-│   ├── mode-build/           ← The Architect workflow
-│   │   └── SKILL.md
-│   ├── mode-modify/          ← The Refactoring Engineer workflow
-│   │   └── SKILL.md
-│   └── mode-debug/           ← The QA Lead workflow
-│       └── SKILL.md
+│   ├── skill-template/SKILL.md     ← How to write skills for the Generator
+│   ├── state-schema/SKILL.md       ← STATE.md format (the operational hub)
+│   ├── mode-build/SKILL.md         ← The Architect workflow
+│   ├── mode-modify/SKILL.md        ← The Refactoring Engineer workflow
+│   └── mode-debug/SKILL.md         ← The QA Lead workflow
 │
-│   (Generated during Spec phase — examples:)
-│   ├── fastapi-backend/
-│   │   └── SKILL.md
-│   └── react-frontend/
-│       └── SKILL.md
+│   (Generated during Spec — project-specific:)
+│   ├── fastapi-backend/SKILL.md
+│   └── react-frontend/SKILL.md
 │
-├── Concept.md                ← Raw requirements + Project Summary
-├── Architecture.md           ← System design (source of truth)
-├── Plan.md                   ← Task tickets for the Ok Model
-├── STATE.md                  ← Session checkpoint / save game file
-├── CHANGELOG.md              ← What was built, when
-├── Triage.md                 ← Bug investigation (debug mode only)
+├── Architecture.md                 ← System design (source of truth)
+├── Plan.md                         ← Task tickets for the Generator
+├── STATE.md                        ← Operational hub: summary, tracking, decisions
+├── CHANGELOG.md                    ← What was built, when
+├── Triage.md                       ← Bug investigation (debug mode only)
 └── README.md
 ```
 
-### Why the Split Architecture?
+### What Each File Does
 
-Claude Code auto-loads `CLAUDE.md` and everything in `.claude/rules/` at session start. Files under 200 lines achieve over 90% instruction adherence; longer files degrade significantly. So the monolithic rules file is split into a lean 55-line router plus four focused rule modules, each under 80 lines. Skills load on demand via `@` file references — only the skills needed for the current task enter the context window.
+**Architecture.md** — The structural source of truth. Every endpoint, model, component, and data flow lives here. If it's not in this file, the Generator will halt rather than invent it.
 
-## Prerequisites
+**Plan.md** — The work order. Each step is a task ticket with inputs, outputs, function signatures, test contracts, manual verification criteria, and boundary constraints. The Generator executes these mechanically.
 
-- **Claude Code** installed ([setup guide](https://code.claude.com/docs/en/setup))
-- **Claude Pro, Max, Teams, or Enterprise** account (free plan does not include Claude Code)
-- **Git** initialized in your project
+**STATE.md** — The operational hub. Contains the Project Summary (compressed working memory), phase tracking, tech stack, key decisions log, active skills, and any blocked escalations. This is the first file read on every session start.
 
-### Install Claude Code
+**Skills** — The interface between planning intent and mechanical execution. Project-specific files generated by the Planner with copy-paste code patterns, DO/DO NOT rules, error handling contracts, and test conventions — all using your project's actual types and names.
 
-**macOS / Linux:**
-
-```bash
-curl -fsSL https://claude.ai/install.sh | bash
-```
-
-**Windows (PowerShell):**
-
-```powershell
-irm https://claude.ai/install.ps1 | iex
-```
-
-Verify:
-
-```bash
-claude --version
-```
-
-First run opens your browser for one-time authentication:
-
-```bash
-claude
-```
+**Triage.md** — Debug mode only. The detective's notebook with hypotheses, bug classifications, and test tickets.
 
 ## Setup
 
-```bash
-# Create your project
-mkdir my-project && cd my-project
-git init
+### Prerequisites
 
-# Copy the framework into your project
+- [Claude Code](https://code.claude.com/docs/en/setup) installed
+- Claude Pro, Max, Teams, or Enterprise account
+- Git initialized in your project
+
+### Install Claude Code
+
+```bash
+# macOS / Linux
+curl -fsSL https://claude.ai/install.sh | bash
+
+# Windows (PowerShell)
+irm https://claude.ai/install.ps1 | iex
+
+# Verify
+claude --version
+```
+
+### Add the Framework to Your Project
+
+```bash
+mkdir my-project && cd my-project && git init
+
+# Copy framework files
 cp CLAUDE.md my-project/
 cp -r .claude my-project/
 cp -r skills my-project/
 ```
 
-Verify the structure:
-
-```
-my-project/
-├── CLAUDE.md
-├── .claude/rules/ (4 files)
-└── skills/ (5 directories)
-```
-
-That's it. Claude Code auto-detects `CLAUDE.md` and `.claude/rules/` when you launch a session from this directory.
+Claude Code auto-detects `CLAUDE.md` and `.claude/rules/` when you launch from this directory.
 
 ## Usage
 
-### Your First Build
+### Building a New Project
 
-**Session 1 — Good Model:**
+**Planner session:**
 
 ```bash
-# Launch with your strong model
-claude --model claude-sonnet-4-6-20250514
+claude
 ```
-
-Inside the session:
 
 ```
 You:     /build A FastAPI app that uploads PDFs, extracts text, and
-         summarizes them with an LLM. React frontend for upload and results.
+         summarizes them with an LLM. React frontend.
 
-Claude:  [Asks detailed questions about stack, testing, data model, edge cases]
+Claude:  [Asks questions about stack, testing, data model, edge cases]
 
 You:     proceed to spec
 
-Claude:  [Writes Architecture.md, Plan.md, generates bespoke skills, STATE.md]
-Claude:  "Spec Phase complete. Review the files. Start an Ok Model session
-          and type start execution."
+Claude:  [Writes Architecture.md, Plan.md, generates skills, STATE.md]
+Claude:  "Spec Phase complete. Review the files. Type start execution."
 ```
 
-**Session 2 — Ok Model:**
-
-```bash
-# Launch with your cheap model
-claude --model claude-haiku-4-5-20251001
-```
-
-Inside the session:
+**Generator session:**
 
 ```
 You:     start execution
 
 Claude:  [Reads STATE.md, loads skills, finds first task ticket]
-Claude:  [Writes failing test → implements code → test passes → commits]
-Claude:  "Phase 3, Step 3 complete. Halting. Start a new session,
-          type continue plan."
+Claude:  [Writes tests → implements → tests pass]
+Claude:  "Tests passing. Here's what I built and the manual checks:
+          - [x] test_create_document_success
+          - [x] test_create_document_missing_field
+          Manual verification:
+          - POST /documents/ returns 201 with valid payload
+          - POST /documents/ returns 422 with empty body
+          Ready to commit?"
+
+You:     [review, test manually if needed] yes
+
+Claude:  [Commits, continues to next ticket or halts]
 ```
 
-**Session 3+ — Ok Model (continuation):**
-
-```bash
-claude --model claude-haiku-4-5-20251001
-```
+**Continuation:**
 
 ```
 You:     continue plan
@@ -212,195 +193,163 @@ Claude:  "Re-hydration complete.
           Reply 'confirmed' to proceed."
 
 You:     confirmed
-
-Claude:  [Continues executing task tickets...]
 ```
 
-### Adding Features
-
-Switch back to the Good Model:
-
-```bash
-claude --model claude-sonnet-4-6-20250514
-```
+### Modifying an Existing Project
 
 ```
-You:     /modify Add batch upload that processes multiple PDFs concurrently
-         with a progress bar.
-```
+You:     /modify Add batch upload for multiple PDFs with progress tracking
 
-The Refactoring Engineer checks for architectural conflicts, updates the spec surgically, and generates new task tickets.
+Claude:  [Reads existing architecture, detects conflicts]
+Claude:  "Warning: Current pipeline processes PDFs synchronously.
+          Batch upload needs async processing. Should we migrate the
+          entire pipeline or add a separate batch path?"
+
+You:     [discuss, decide] proceed to spec
+
+Claude:  [Surgically updates Architecture.md, extends Plan.md]
+```
 
 ### Debugging
 
-```bash
-claude --model claude-sonnet-4-6-20250514
 ```
+You:     /debug Extraction returns empty text for scanned PDFs.
+         Error: ExtractedContent.text is empty string.
 
-```
-You:     /debug The extraction pipeline returns empty text for scanned PDFs.
-         Stack trace: [paste error]
-```
+Claude:  [Asks reproduction steps, classifies bug]
 
-The QA Lead triages, classifies the bug (permanent test vs throwaway sandbox), formulates hypotheses, and writes verification tickets for the Ok Model.
+You:     proceed to spec
+
+Claude:  [Writes hypotheses in Triage.md with test tickets]
+Claude:  "Hypothesis 1: OCR fallback not triggered for image-only PDFs.
+          Classification: Tier 1 — Permanent regression test.
+          Type start execution to test this hypothesis."
+```
 
 ## Key Concepts
 
 ### Task Tickets
 
-Every step in `Plan.md` is a structured ticket the Ok Model follows literally:
+Every step in Plan.md is a structured ticket:
 
 ```markdown
 ### Phase 3, Step 4: Build Extraction Pipeline
 
-**Input:** src/models/document.py (Document schema)
+**Input:** src/models/document.py
 **Output:** src/pipeline/extractor.py, tests/test_extractor.py
 **Spec:**
 - Function `extract_text(doc: Document) -> ExtractedContent`
-- Must handle: PDF, DOCX, plain text
-- On failure: raise `ExtractionError` with source format in message
+- Handle: PDF, DOCX, plain text
+- On failure: raise `ExtractionError` with source format
 
 **Test Contract:**
-- test_extract_pdf_success: valid PDF → ExtractedContent with .text populated
-- test_extract_unsupported: .xlsx → raises ExtractionError
-- test_extract_corrupt: truncated PDF → raises ExtractionError
+- test_extract_pdf_success: valid PDF → ExtractedContent with .text
+- test_extract_unsupported: .xlsx → ExtractionError
+- test_extract_corrupt: truncated PDF → ExtractionError
+
+**Manual Verification:**
+- Upload a multi-page PDF via the API; confirm all pages extracted
+- Upload a scanned PDF; confirm OCR fallback produces text
+- Upload a 0-byte file; confirm clean error response, no crash
 
 **Skills to Load:** @skills/fastapi-backend/SKILL.md
 **Boundary:** src/pipeline/, tests/test_extractor.py
 **Run Command:** uv run pytest tests/test_extractor.py -v
 ```
 
-The **Boundary** field is critical — it tells the Ok Model exactly which files it may touch. Anything outside the boundary triggers a mandatory halt.
+The **Boundary** field constrains which files the Generator can touch. The **Manual Verification** field tells you what to check after tests pass.
 
 ### The Halt Protocol
 
-`[Halt here]` flags in `Plan.md` mark safe stopping points placed by the Good Model:
+`[Halt here]` flags mark safe stopping points:
 
 - Before domain shifts (backend → frontend)
-- Every 3–5 execution steps
-- When the context window is at risk of degradation
-- Before the final Global Test Phase (which you run manually)
+- Every 3-5 execution steps
+- Before the final Global Test Phase (you run this manually)
 
-When the Ok Model hits `[Halt here]`, it checkpoints `STATE.md`, commits, and tells you to start a fresh session.
+When the Generator hits `[Halt here]`, it checkpoints STATE.md, gets your commit approval, and tells you to start a fresh session.
 
 ### Blocked Escalations
 
-If the Ok Model encounters something the spec doesn't cover, it **cannot improvise**. It writes a factual problem statement in `STATE.md` and halts:
+When the Generator encounters a spec gap, it halts with a factual problem statement:
 
 ```markdown
 ## Blocked
-**Phase:** Phase 3, Step 4
-**Problem:** Architecture.md specifies REST endpoints but the frontend
-  component in Step 7 expects WebSocket push for real-time progress.
-**Evidence:** Architecture.md Section 3.2 defines only GET/POST routes.
-**Files touched before halt:** src/pipeline/extractor.py (partial)
+**Phase:** Phase 3, Step 5
+**Problem:** Architecture.md defines REST endpoints only but Step 7
+  requires real-time progress updates.
+**Evidence:** Architecture.md Section 3.2 — no streaming spec.
+**Files touched before halt:** None
 ```
 
-You then start a Good Model session. It reads the Blocked section, resolves the architectural issue, updates the spec, clears the block, and the Ok Model can resume.
+No suggestions, no workarounds. You start a Planner session to resolve the architectural question, then the Generator resumes.
+
+### STATE.md — The Operational Hub
+
+STATE.md replaced Concept.md as the single source of operational state. It includes:
+
+- **Project Summary** — a 20-30 line compressed snapshot of the system (what it does, major components, current scope). This is the fast-path context — the Generator reads this instead of the full Architecture.md for most tasks.
+- **Phase History** — what was completed, by which phase (planner/generator).
+- **Tech Stack** — canonical list of all technologies.
+- **Key Decisions Log** — append-only record of why things changed.
+- **Active Skills** — which skill files to load for the current work.
+- **Blocked** — present only when the Generator has halted on a boundary violation.
 
 ### Bespoke Skills
 
-During Spec phase, the Good Model generates project-specific skill files with:
+During Spec phase, the Planner generates project-specific skills with:
 
-- **Canonical file structure** (the Ok Model can't create files outside it)
-- **Copy-paste code patterns** using your project's actual types and names
-- **DO / DO NOT rules** (binary, no judgment calls)
-- **Error handling contracts** (exactly what to raise and catch)
-- **Testing conventions** (naming, fixtures, minimum coverage)
-- **Exact commands** (every CLI command, ready to paste)
+- **Canonical file structure** — the Generator can't create files outside it
+- **Copy-paste code patterns** — using your project's actual types and names
+- **DO / DO NOT rules** — binary, no judgment calls required
+- **Error handling contracts** — exactly what to raise and catch
+- **Testing conventions** — naming, fixtures, minimum coverage
+- **Exact commands** — every CLI command, ready to paste
 
-Skills are loaded on demand using Claude Code's `@` file reference syntax (e.g., `@skills/fastapi-backend/SKILL.md`). Only the skills relevant to the current task ticket enter the context window.
+Skills load on demand via `@skills/name/SKILL.md` — only the skills needed for the current ticket enter the context window.
 
-### STATE.md — The Save Game
+## The Evaluation Model
 
-`STATE.md` is the handoff document between sessions and between model tiers. It records:
+This framework uses a three-layer evaluation approach:
 
-- Active mode and current phase/step
-- Tech stack summary
-- Phase history with model tier annotations (who did what)
-- Key decisions log (append-only, never deleted)
-- Active skill file paths
-- Files modified in the last session
-- Blocked sections (when the Ok Model has halted on a boundary violation)
+**Layer 1 — Automated (TDD):** The Generator writes tests before code. Tests catch regressions and prove basic functionality. This is the automated sanity check.
 
-Written automatically at every `[Halt here]` checkpoint.
+**Layer 2 — Manual Verification:** Each task ticket includes a Manual Verification field specifying what you should inspect. The Generator presents this checklist alongside test results.
 
-## File Authority
+**Layer 3 — You:** No commit happens without your approval. You review test results, run manual checks, and decide whether the work meets your standards. The Global Test Phase at the end of every plan is exclusively yours to run.
 
-| File | Good Model | Ok Model |
-|---|---|---|
-|Model Switching
-
-Use the `--model` flag when launching Claude Code:
-
-```bash
-# Good Model session
-claude --model claude-sonnet-4-6-20250514
-
-# Ok Model session
-claude --model claude-haiku-4-5-20251001
-```
-
-Or switch interactively inside a session with the `/model` command.
-
-### How Rules Load
-
-Claude Code has a specific loading order:
-
-1. `CLAUDE.md` (project root) — loaded first, every session
-2. `.claude/rules/*.md` — loaded automatically alongside CLAUDE.md
-3. `~/.claude/CLAUDE.md` (user-level, optional) — personal preferences across all projects
-4. Skills (`@skills/...`) — loaded on demand when referenced
-
-The framework's rules in `.claude/rules/` auto-load without you doing anything. Skills load only when a task ticket references them, saving context window space.
-
-### Line Count Budget
-
-All framework files are sized for Claude Code's adherence sweet spot:
-
-| File | Lines |
-|---|---|
-| CLAUDE.md | 55 |
-| governance.md | 32 |
-| two-tier-authority.md | 47 |
-| boot-sequence.md | 54 |
-| task-ticket-format.md | 76 |
-| Mode skills | 103–126 each |
-
-Every file is under the 200-line threshold where adherence drops significantly.
-
-### Differences from the Cursor Version
-
-| Aspect | Cursor | Claude Code |
-|---|---|---|
-| Rules file | `.cursorrules` (single file) | `CLAUDE.md` + `.claude/rules/` (split) |
-| Auto-loading | `.cursorrules` only | CLAUDE.md + all rules/ files |
-| Skill references | `./skills/path` | `@skills/path` |
-| Model switching | UI model picker | `--model` flag or `/model` |
-| Slash commands | Native Cursor feature | Plain text pattern matching |
+The framework deliberately avoids automated self-evaluation because agents evaluate their own work poorly. Separating the builder from the judge — and making the judge human — produces better outcomes for projects at this complexity level.
 
 ## Version History
 
 | Version | Key Change |
 |---|---|
-| 1.0–3.0 | Standard prompt-in, code-out. Suffered context collapse. |
-| 3.5 | Decoupled design from implementation. Introduced HITL gates. |
-| 4.0 | 3-Phase Pipeline (Ask → Spec → Execute). Git, TDD, CHANGELOG. |
+| 1.0–3.0 | Standard prompt-in, code-out. Context collapse. |
+| 3.5 | Decoupled design from implementation. HITL gates. |
+| 4.0 | 3-Phase Pipeline (Ask → Spec → Execute). Git, TDD. |
 | 4.1 | Dynamic skill creation replaced static skill banks. |
-| 4.2 | Programmable `[Halt here]` flags for context-aware chunking. |
+| 4.2 | Programmable `[Halt here]` for context-aware chunking. |
 | 5.0 | Strategy Pattern: `/build`, `/modify`, `/debug` personas. |
-| 5.1 | Two-Tier Bug Classification (permanent tests vs throwaway sandboxes). |
-| **5.2** | **Two-Tier Model Architecture, STATE.md re-hydration, task tickets with Boundary fields, Blocked escalation protocol. Claude Code adaptation with split rules architecture.** |
+| 5.1 | Two-Tier Bug Classification. |
+| 5.2 | Two-Tier Model Architecture, STATE.md, task tickets, Blocked protocol. |
+| **5.3** | **Phase-based authority (no model labels). Unified Planner → Generator pipeline. User as Evaluator. Manual Verification in tickets. Concept.md eliminated — STATE.md is the operational hub with Project Summary. Inspired by Anthropic's harness design research.** |
 
 ## Tips
 
-- **Start small.** Your first project should be something you could build manually in a day. This lets you verify the framework works before trusting it with complex multi-session builds.
-- **Review the generated skills.** If the Ok Model keeps deviating, the skills are probably underspecified. Tighten the DO NOT rules.
-- **Don't skip the handshake.** When the Ok Model announces its re-hydration summary after `continue plan`, actually read it. This is where you catch drift before it costs you hours.
-- **The Global Test Phase is yours.** The framework deliberately makes you run the final test suite manually. This is your last line of defense.
-- **Check context consumption.** Run `/memory` in Claude Code to see how much of your context window the framework files consume. If it feels heavy, move rarely-used skills out of `skills/` and reference them explicitly with `@` only when needed.
-- **Use `/compact` sparingly.** Claude Code's `/compact` command summarizes the session. CLAUDE.md survives compaction (re-read from disk), but in-conversation instructions don't. The framework's file-based architecture means most state survives compaction naturally.
+- **Start small.** Your first project should be something you could build in a day. Verify the framework works before trusting it with multi-session builds.
+- **Review generated skills.** If the Generator keeps deviating, the skills are underspecified. Tighten the DO NOT rules and add more concrete patterns.
+- **Don't skip the handshake.** When the Generator announces its re-hydration summary, read it. This is where you catch drift early.
+- **The Global Test Phase is yours.** You run the final test suite. This is your last line of defense.
+- **Re-examine constraints as models improve.** Each rule encodes an assumption about what the model can't do on its own. As models get better, some constraints become unnecessary overhead. Strip what's no longer load-bearing.
+- **Use `/compact` carefully in Claude Code.** CLAUDE.md survives compaction (re-read from disk), but in-conversation context doesn't. The framework's file-based architecture means most state survives naturally.
+
+## Adapting to Other Agents
+
+This README covers the Claude Code edition. The framework also works with:
+
+- **Cursor** — use a single `.cursorrules` file instead of the split `CLAUDE.md` + `.claude/rules/` architecture. Skills and STATE.md work identically.
+- **Other agents** — any agent that reads markdown files from the workspace can use this framework. The key requirement is that the agent can be instructed to read specific files before acting.
 
 ## License
 
-This framework is open for personal and commercial use. Attribution appreciated but not required.
+Open for personal and commercial use. Attribution appreciated but not required.
