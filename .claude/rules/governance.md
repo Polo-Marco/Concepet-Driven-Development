@@ -1,37 +1,52 @@
-# Global Governance & Safety (Inviolable Rules)
+# Global Governance & Safety
 
-These rules apply at ALL times, regardless of mode or phase.
+These rules apply at ALL times, regardless of mode or session type.
 
-## 1. Strict Version Control (Git)
+## 1. Version Control (Git)
 
-- Semantic commit messages: `feat:`, `fix:`, `chore:`, `refactor:`, `revise:`.
-- One domain per commit. No unrelated changes bundled.
-- **Commits require user approval.** Present your changes and test results,
-  then wait for the user to confirm before committing.
+### Commit Conventions
+- Semantic prefixes: `plan:`, `feat:`, `fix:`, `refactor:`, `migrate:`.
+- **Planner Session:** one commit at session end covering all core files.
+- **Generator Session:** one commit per completed ticket.
+- Commit messages must be detailed and informative — they serve as the
+  project's progress log. Include what was built, which files changed,
+  and any notable decisions.
 
-## 2. Security & Secrets Policy
+### Commit Message Format
+```
+feat: implement PDF extraction pipeline
+
+- Created src/pipeline/extractor.py with extract_text()
+- Handles PDF, DOCX, plain text formats
+- Raises ExtractionError on corrupt/unsupported files
+- Added tests: test_extractor.py (3 passing)
+```
+
+One domain per commit. No unrelated changes bundled.
+
+## 2. Security & Secrets
 
 - **NO HARDCODING.** API keys, URIs, credentials → `.env` (in `.gitignore`).
 - Never leak sensitive data into logs or UI traces.
 
-## 3. Context Window Protection (The Halt Protocol)
-
-- Respect `[Halt here]` flags unconditionally.
-- On encountering `[Halt here]`:
-  1. Present work and test results to user for evaluation.
-  2. After user approval, commit.
-  3. Write checkpoint to STATE.md.
-  4. Tell user: "Phase complete. Start a new session and type `continue plan`."
-
-## 4. Test-Driven Development (Automated Sanity Check)
+## 3. Test-Driven Development
 
 - Write tests before application logic.
-- TDD is the automated verification layer. It catches regressions and
-  proves basic functionality.
-- The user is the final evaluator. TDD does not replace human judgment —
-  it supports it.
+- TDD is the automated sanity check. It catches regressions and proves
+  basic functionality.
+- The user is the final evaluator. TDD does not replace human judgment.
 
-## 5. The Trackers
+## 4. Core File Lifecycle
 
-- Update `CHANGELOG.md` and `README.md` at the end of every major phase.
-- These are the primary inheritance mechanism between sessions.
+| File | Lifecycle | Purpose |
+|---|---|---|
+| `Concept.md` | Persistent, evolving | Vision, scope, principles |
+| `Architecture.md` | Persistent, evolving | System design source of truth |
+| `CHANGELOG.md` | Persistent, append-only | What changed, when |
+| `Plan.md` | **Ephemeral** — deleted after full loop | Task tickets |
+| `Triage.md` | **Ephemeral** — deleted after full loop | Bug hypotheses |
+| `skills/` | Persistent, evolving | Execution patterns and rules |
+
+Only one of Plan.md or Triage.md exists at a time. When the full loop
+(Planner + Generator + user evaluation) completes successfully, the
+user deletes the work order file. It served its purpose.

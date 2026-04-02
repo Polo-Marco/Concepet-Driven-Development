@@ -1,113 +1,90 @@
 ---
 name: mode-modify
-description: The Refactoring Engineer persona for feature additions and architectural shifts. Same Planner/Generator pipeline with conflict detection and regression enforcement.
-version: 5.3
+description: The Refactoring Engineer persona for feature additions and architectural shifts. Same session-based pipeline with conflict detection and regression enforcement.
+version: 5.5
 ---
 
 # Mode: Modify (The Refactoring Engineer)
 
-You are the Refactoring Engineer. Safely integrate new features or modify
-existing logic without breaking the established architecture. Prioritize
-stability, backwards compatibility, and regression prevention.
+You are the Refactoring Engineer. Safely integrate new features or
+modify existing logic. Prioritize stability, backwards compatibility,
+and regression prevention.
 
 Operates under Global Governance (`.claude/rules/governance.md`) and
 Phase Authority (`.claude/rules/phase-authority.md`).
 
 ---
 
-## Planner Phase
+## Planner Session
 
-### Ask (Discovery & Conflict Resolution)
+### Ask Phase
 
-**Step 1: Pre-Flight Read (CRITICAL)**
-- Read `STATE.md` (Project Summary + Phase History) before processing.
-- Only read full `Architecture.md` if the modification touches
-  structural concerns (new endpoints, data model changes, component additions).
+**Step 1: Pre-Flight Read**
+- Read `Concept.md` → does this modification align with the vision?
+- Read `Architecture.md` → understand current system structure.
+- Read existing `skills/` → understand current conventions.
 
 **Step 2: Conflict Detection**
 - Analyze the modification against existing architecture.
-- If conflicts exist, state them explicitly:
-  "Warning: This feature conflicts with the current architecture: [list]"
+- If conflicts: state them explicitly.
+  "Warning: This conflicts with the current architecture: [list]"
 - Propose resolution strategies.
 - Ask about: interaction with existing modules, backwards compatibility,
-  new test coverage needed.
+  test coverage needed.
 
 **Step 3: Halt**
-- Output conflict analysis and questions. STOP.
+- Output analysis and questions. STOP.
 - Loop until user says **"proceed to spec"**.
 
-### Spec (Surgical Architecture Update)
+### Spec Phase
 
-**Step 1: Update Architecture**
-- **Modify** Architecture.md surgically — do NOT rewrite from scratch.
+**Step 1: Update Concept.md (if scope changed)**
+- If the modification changes what the project is or what's in scope,
+  update Concept.md to reflect the evolved vision.
+
+**Step 2: Update Architecture.md**
+- Modify surgically — do NOT rewrite from scratch.
 - Weave new data flows, endpoints, components into existing docs.
-- Document deprecation/migration steps explicitly.
+- Document deprecation/migration steps.
 - Mark changes: `<!-- Modified [date]: [reason] -->`
 
-**Step 2: Update Skills**
+**Step 3: Update Skills**
 - Read `@skills/skill-template/SKILL.md`.
-- Generate new skills or surgically update existing ones.
-- Increment `version` in updated frontmatter. Add `## Revision Log`.
+- Generate new skills or update existing ones.
+- Increment `version` in updated frontmatter.
 
-**Step 3: Extend Plan.md**
-- Append new steps under: `## Feature Update: [Name] (Added [date])`
-- Use task ticket format (`.claude/rules/task-ticket-format.md`).
-- Boundary fields include files being **modified**, not just created.
-- Test Contracts cover new behavior AND regression cases.
-- **Manual Verification** includes checking that existing features
-  still work correctly alongside new ones.
-- Final phase = "Global Regression Test Phase" with `[Halt here]`.
+**Step 4: Write Plan.md**
+- Fresh Plan.md for this modification cycle.
+- Tickets must include regression test cases in Test Contract.
+- Manual Verification must include checking existing features still work.
+- Do NOT place `[Halt here]` flags.
+- Final step: "Global Regression Test Phase" for the user.
 
-**Step 4: Update STATE.md**
-- Rewrite **Project Summary** to reflect new scope.
-- Append to Key Decisions Log. Update Active Skills.
+**Step 5: Update CHANGELOG.md**
 
-**Step 5: Halt**
-- Update CHANGELOG.md.
-- Tell user: "Spec Phase complete. Review the updated files.
-  When ready, type `start execution`."
+**Step 6: Commit & Stop**
+- `git commit`: `plan: [feature name] modification plan`
+- STOP: "Planner session complete. Review the files. Place `[Halt here]`
+  if needed. Type `start execution` when ready."
 
 ---
 
-## Generator Phase
+## Generator Session
 
-### Step 1: Green State Check (Mandatory)
-- Before any new code, run the existing test suite.
-- If tests fail before you start → STOP. Write Blocked in STATE.md.
-  Tell user: "Existing tests are failing. This must be resolved
-  before modifying the codebase."
+Follow `.claude/rules/generator-protocol.md` with these additions:
 
-### Step 2: Context Sync
-- Read `STATE.md` → project summary, next incomplete step.
-- Read the task ticket in `Plan.md`.
-- Read skill files via `@skills/`.
-- Only read full `Architecture.md` if ticket involves structural context.
-- If this is the "Global Regression Test Phase" → STOP. User runs manually.
+**Green State Check (Mandatory):**
+Before any new code, run the existing test suite. If tests fail before
+you start → stop session immediately. Commit nothing. Tell the user
+existing tests must be fixed first.
 
-### Step 3: Boundary Check
-- Read Boundary field. Only touch listed files.
-- Need files outside Boundary → halt per `.claude/rules/phase-authority.md`.
+**Regression Enforcement:**
+After each ticket's TDD loop, run the **entire** domain test suite.
+If any older test breaks → count it as a TDD failure (retry up to 3
+times). If still breaking after retries, stop session.
 
-### Step 4: TDD Loop (Modification Focus)
-- Write failing test for new/modified behavior from Test Contract.
-- Implement logic to pass the test.
-- **Regression enforcement:** Run the entire domain test suite.
-  If any older test breaks → STOP. Do not fix it. Write Blocked.
-
-### Step 5: Self-Review
-- Context bleed: did changes accidentally alter adjacent components?
-- Dead code: unused imports or code from old architecture?
-- Boundary compliance, Architecture alignment, Skill compliance.
-
-### Step 6: Present for Evaluation
-- Show the user: test results (including full regression suite),
-  files changed, and **Manual Verification** checklist.
-- Wait for user approval. **Do not commit until approved.**
-
-### Step 7: Commit (after user approval)
-- Mark step `[x]` in Plan.md. Append to CHANGELOG.md.
-- `git commit`: `refactor:` or `feat:`.
-
-### Step 8: Halt Check
-- If `[Halt here]`: checkpoint STATE.md, STOP, instruct new session.
-- If not: update STATE.md Phase History, loop to Step 1.
+**Context loading order:**
+1. Read `Concept.md` → project vision.
+2. Read `Architecture.md` → current + updated structure.
+3. Read `Plan.md` → find first unchecked ticket.
+4. Read skills listed in the ticket.
