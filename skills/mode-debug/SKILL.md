@@ -1,7 +1,7 @@
 ---
 name: mode-debug
 description: The QA Lead persona for root-cause analysis. Uses ephemeral Triage.md. Two-Tier Verification (Permanent Tests vs Throwaway Sandboxes).
-version: 5.5
+version: 5.6
 ---
 
 # Mode: Debug (The QA Lead)

@@ -1,8 +1,10 @@
-# Vibe Coding Framework 5.5
+# Vibe Coding Framework 5.6
 
 A structured AI development framework built on a session-based pipeline.
 The Planner designs. The Generator builds. You evaluate. Git is the
 checkpoint system.
+
+**Works with Claude Code and Cursor.**
 
 ## The Problem
 
@@ -112,7 +114,7 @@ you delete it. It served its purpose.
 
 ```
 your-project/
-├── CLAUDE.md                       ← Router (auto-loaded)
+├── CLAUDE.md                       ← Router (auto-loaded by Claude Code & Cursor)
 ├── .claude/rules/
 │   ├── governance.md               ← Git, security, TDD, file lifecycle
 │   ├── phase-authority.md          ← Authority matrix, boundary rules
@@ -135,11 +137,13 @@ your-project/
 
 ### Prerequisites
 
-- [Claude Code](https://code.claude.com/docs/en/setup) installed
+- **Claude Code** or **Cursor** (or both)
 - Claude Pro, Max, Teams, or Enterprise account
-- Git initialized
+- Git initialized in your project
 
-### Install Claude Code
+### Option A: Claude Code
+
+Install Claude Code if you haven't:
 
 ```bash
 # macOS / Linux
@@ -149,12 +153,38 @@ curl -fsSL https://claude.ai/install.sh | bash
 irm https://claude.ai/install.ps1 | iex
 ```
 
-### Add the Framework
+Add the framework to your project:
 
 ```bash
 mkdir my-project && cd my-project && git init
 # Copy: CLAUDE.md, .claude/, skills/ into project root
 ```
+
+Claude Code auto-loads `CLAUDE.md` and all files in `.claude/rules/`
+on startup. The framework is active immediately.
+
+### Option B: Cursor
+
+Cursor auto-loads `CLAUDE.md` as a workspace rule. Copy the same
+files into your project:
+
+```bash
+mkdir my-project && cd my-project && git init
+# Copy: CLAUDE.md, .claude/, skills/ into project root
+```
+
+Open the project in Cursor. The `CLAUDE.md` router is picked up
+automatically. The agent reads `.claude/rules/` and `skills/` files
+on-demand when referenced by the router or mode skills.
+
+### Both tools, same files
+
+The framework uses the same file structure regardless of which tool
+you use. `CLAUDE.md` is the single entry point — it serves as the
+router for both Claude Code and Cursor. No duplication needed.
+
+If you switch between tools on the same project, everything works.
+Git history, skills, core files — all tool-agnostic.
 
 ## Usage
 
@@ -166,12 +196,12 @@ mkdir my-project && cd my-project && git init
 You:     [/build] A FastAPI app that uploads PDFs, extracts text,
          and summarizes them with an LLM. React frontend.
 
-Claude:  [Writes Concept.md, asks questions about stack and edge cases]
+Agent:   [Writes Concept.md, asks questions about stack and edge cases]
 
 You:     proceed to spec
 
-Claude:  [Writes Architecture.md, Plan.md, skills, CHANGELOG.md]
-Claude:  "Planner session complete. Review the files. Place [Halt here]
+Agent:   [Writes Architecture.md, Plan.md, skills, CHANGELOG.md]
+Agent:   "Planner session complete. Review the files. Place [Halt here]
           if needed. Type start execution when ready."
 ```
 
@@ -183,11 +213,11 @@ you want to check backend work before frontend starts.
 ```
 You:     start execution
 
-Claude:  [Reads Plan.md, executes tickets, commits after each]
-Claude:  [Hits your [Halt here] → commits and stops]
+Agent:   [Reads Plan.md, executes tickets, commits after each]
+Agent:   [Hits your [Halt here] → commits and stops]
          or
-Claude:  [Completes all tickets → stops]
-Claude:  "Generator session complete. Ready for your evaluation."
+Agent:   [Completes all tickets → stops]
+Agent:   "Generator session complete. Ready for your evaluation."
 ```
 
 **You evaluate.** Run global tests. Click through the app. If
@@ -198,13 +228,13 @@ satisfied, delete Plan.md. Full loop done.
 ```
 You:     [/modify] Add batch upload with concurrent PDF processing
 
-Claude:  [Reads Concept.md and Architecture.md, detects conflicts]
-Claude:  "Warning: Current pipeline is synchronous. Batch processing
+Agent:   [Reads Concept.md and Architecture.md, detects conflicts]
+Agent:   "Warning: Current pipeline is synchronous. Batch processing
           needs async. Options: ..."
 
 You:     proceed to spec
 
-Claude:  [Updates Architecture.md surgically, writes fresh Plan.md]
+Agent:   [Updates Architecture.md surgically, writes fresh Plan.md]
 ```
 
 ### Debugging
@@ -212,12 +242,12 @@ Claude:  [Updates Architecture.md surgically, writes fresh Plan.md]
 ```
 You:     [/debug] Extraction returns empty text for scanned PDFs
 
-Claude:  [Creates Triage.md with hypotheses and test tickets]
-Claude:  "Hypothesis 1: OCR fallback not triggered. Tier 1 — permanent test."
+Agent:   [Creates Triage.md with hypotheses and test tickets]
+Agent:   "Hypothesis 1: OCR fallback not triggered. Tier 1 — permanent test."
 
 You:     start execution
 
-Claude:  [Tests hypothesis, fixes if proven, commits]
+Agent:   [Tests hypothesis, fixes if proven, commits]
 ```
 
 ### Migrating an Existing Codebase
@@ -225,7 +255,7 @@ Claude:  [Tests hypothesis, fixes if proven, commits]
 ```
 You:     [/migrate]
 
-Claude:  [Reads the codebase, asks about vision and principles]
+Agent:   [Reads the codebase, asks about vision and principles]
 
 You:     This is a customer support tool. We built it fast.
          It needs to stay simple — no user accounts, just ticket
@@ -233,9 +263,9 @@ You:     This is a customer support tool. We built it fast.
 
 You:     proceed to spec
 
-Claude:  [Writes Concept.md, Architecture.md (as-is), skills
+Agent:   [Writes Concept.md, Architecture.md (as-is), skills
           matching existing patterns. No code changes.]
-Claude:  "Migration complete. Use [/modify] for changes,
+Agent:   "Migration complete. Use [/modify] for changes,
           [/debug] for bugs."
 ```
 
@@ -311,6 +341,23 @@ inspect after tests pass — UX, visual, integration.
 **Layer 3 — You:** Run global tests. Delete Plan.md/Triage.md when
 satisfied. The full loop isn't done until you say so.
 
+## Claude Code vs Cursor: What's Different?
+
+The framework is tool-agnostic by design. Here's what each tool
+does with the framework files:
+
+| Concern | Claude Code | Cursor |
+|---|---|---|
+| Router loading | `CLAUDE.md` auto-loaded on startup | `CLAUDE.md` auto-loaded as workspace rule |
+| Rule files | `.claude/rules/*.md` auto-loaded | Read on-demand when referenced by router/skills |
+| Skill files | Read via `Read` tool when instructed | Read via `Read` tool when instructed |
+| `@` references | Plain text (agent resolves paths) | File references (IDE resolves paths) |
+| Git operations | Terminal commands | Terminal commands |
+| Mode commands | Typed in chat | Typed in chat |
+
+**No code changes needed** to switch tools. The same `CLAUDE.md`,
+`.claude/rules/`, and `skills/` work everywhere.
+
 ## Version History
 
 | Version | Key Change |
@@ -324,7 +371,8 @@ satisfied. The full loop isn't done until you say so.
 | 5.1 | Two-Tier Bug Classification. |
 | 5.2 | STATE.md, task tickets with Boundary, Blocked protocol. |
 | 5.3 | Phase-based authority. Unified Planner/Generator pipeline. User as Evaluator. Inspired by Anthropic harness research. |
-| **5.5** | **Session-based development. Git as checkpoint system. Concept.md restored as vision document. STATE.md eliminated. Plan/Triage ephemeral. User-placed `[Halt here]` only. `[/migrate]` mode. 3-retry logic. `[/mode]` command format.** |
+| 5.5 | Session-based development. Git as checkpoint system. Concept.md restored as vision document. STATE.md eliminated. Plan/Triage ephemeral. User-placed `[Halt here]` only. `[/migrate]` mode. 3-retry logic. `[/mode]` command format. |
+| **5.6** | **Dual-tool compatibility: Claude Code + Cursor. `CLAUDE.md` serves as unified router for both tools. Framework is fully tool-agnostic — same files, same workflow, any agent.** |
 
 ## Tips
 
@@ -337,6 +385,8 @@ satisfied. The full loop isn't done until you say so.
   Each ticket commit tells you what was built.
 - **Delete Plan.md when done.** It's a work order, not documentation.
   Architecture.md and git history are the permanent record.
+- **Switch tools freely.** Start a Planner session in Cursor, run the
+  Generator in Claude Code (or vice versa). Git keeps everything in sync.
 - **Re-examine constraints.** Each rule assumes the model can't do
   something on its own. As models improve, strip what's not load-bearing.
 

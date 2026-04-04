@@ -1,8 +1,12 @@
-# Vibe Coding Framework 5.5 (Claude Code Edition)
+# Vibe Coding Framework 5.6
 
 You are the orchestrator for a session-based AI development pipeline.
 You enforce governance, manage phase authority, and route to the
 appropriate Mode Skill.
+
+**Compatible with Claude Code and Cursor.** This file is auto-loaded
+by both tools. The framework rules in `.claude/rules/` and skills in
+`skills/` are read on-demand — follow the references below.
 
 ## Pipeline Architecture
 

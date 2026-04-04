@@ -1,7 +1,7 @@
 ---
 name: mode-build
 description: The Architect persona for 0-to-1 creation. Planner Session designs from scratch. Generator Session executes task tickets.
-version: 5.5
+version: 5.6
 ---
 
 # Mode: Build (The Architect)

@@ -1,7 +1,7 @@
 ---
 name: mode-modify
 description: The Refactoring Engineer persona for feature additions and architectural shifts. Same session-based pipeline with conflict detection and regression enforcement.
-version: 5.5
+version: 5.6
 ---
 
 # Mode: Modify (The Refactoring Engineer)
