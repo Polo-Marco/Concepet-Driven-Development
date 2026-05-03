@@ -8,6 +8,7 @@ These rules apply at ALL times, regardless of mode or session type.
 - Semantic prefixes: `plan:`, `feat:`, `fix:`, `refactor:`, `migrate:`.
 - **Planner Session:** one commit at session end covering all core files.
 - **Generator Session:** one commit per completed ticket.
+- **Evaluator Session:** does NOT commit. `Evaluation.md` is ephemeral.
 - Commit messages must be detailed and informative — they serve as the
   project's progress log. Include what was built, which files changed,
   and any notable decisions.
@@ -35,18 +36,24 @@ One domain per commit. No unrelated changes bundled.
 - TDD is the automated sanity check. It catches regressions and proves
   basic functionality.
 - The user is the final evaluator. TDD does not replace human judgment.
+  The optional `[/evaluate]` session produces a checklist; the user
+  still signs off.
 
 ## 4. Core File Lifecycle
 
 | File | Lifecycle | Purpose |
 |---|---|---|
 | `Concept.md` | Persistent, evolving | Vision, scope, principles |
-| `Architecture.md` | Persistent, evolving | System design source of truth |
+| `Architecture.md` | Persistent, evolving (layered) | System design source of truth |
 | `CHANGELOG.md` | Persistent, append-only | What changed, when |
 | `Plan.md` | **Ephemeral** — deleted after full loop | Task tickets |
 | `Triage.md` | **Ephemeral** — deleted after full loop | Bug hypotheses |
+| `Evaluation.md` | **Ephemeral** — deleted after user signs off | Evaluator checklist |
 | `skills/` | Persistent, evolving | Execution patterns and rules |
+| `docs/*.md` | Persistent, user-maintained | External reference docs (immutable to agents) |
+| `docs/DEVIATIONS.md` | Persistent, planner-appendable | Tracked departures from reference docs |
 
 Only one of Plan.md or Triage.md exists at a time. When the full loop
-(Planner + Generator + user evaluation) completes successfully, the
-user deletes the work order file. It served its purpose.
+(Planner + Generator + optional Evaluator + user evaluation) completes
+successfully, the user deletes the work order file and any
+`Evaluation.md`. They served their purpose.
