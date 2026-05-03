@@ -12,13 +12,25 @@ When the user types `start execution`, follow this protocol.
   - If both exist → ask the user which to execute.
   - If neither exists → tell the user there is nothing to execute.
 
-## Step 2: Load Context
+## Step 2: Load Context (v6.0 — selective)
 
-- Read `Concept.md` → understand the project vision.
-- Read `Architecture.md` → understand system structure.
-- Read the work order (Plan.md or Triage.md) → find the first
-  unchecked `[ ]` ticket.
-- Read the skill files listed in the ticket's **Skills to Load** field.
+Load context in this order:
+
+1. Read `Architecture.md` **## Overview section only** → high-level
+   project context. Self-contained snapshot of system + components.
+2. Read the work order (`Plan.md` or `Triage.md`) → find the first
+   unchecked `[ ]` ticket.
+3. Read the Architecture.md sections listed in the ticket's
+   **Architecture:** field (e.g. `API Surface`, `Data Models`).
+   - If the field says `Full`, read the entire document.
+   - Never read sections beyond the Overview unless requested.
+4. Read the skill files listed in the ticket's **Skills to Load** field.
+5. If the ticket has a **Reference Docs:** field, read each referenced
+   doc in `docs/` AND read `docs/DEVIATIONS.md` to know which parts
+   of the original spec have been superseded.
+
+`Concept.md` is NOT loaded by the Generator. The Architecture Overview
+provides sufficient project context for execution.
 
 ## Step 3: Execute Tickets Sequentially
 
@@ -41,7 +53,7 @@ For each ticket, in order:
   message explaining what worked and what didn't. Stop the session.
   ```
   wip: extraction pipeline — 2/3 tests passing, test_extract_corrupt failing
-  
+
   - extract_text() handles PDF and DOCX successfully
   - Corrupt file detection not triggering ExtractionError
   - Stopped after 3 fix attempts
@@ -50,7 +62,9 @@ For each ticket, in order:
 ### 3d. Self-Review
 - Security: any hardcoded secrets?
 - Boundary: any files touched outside Boundary?
-- Alignment: does code match Architecture.md?
+- Alignment: does code match the loaded Architecture sections?
+- Reference Docs: if a Reference Doc is listed, does the code respect
+  it (or follow a logged deviation in `docs/DEVIATIONS.md`)?
 - Skill compliance: every DO/DO NOT rule followed?
 
 ### 3e. Commit

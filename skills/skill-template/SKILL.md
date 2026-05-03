@@ -2,10 +2,10 @@
 name: skill-template
 description: Standard for bespoke execution skills. The Planner reads this during Spec Phase to write skills the Generator can follow mechanically.
 author: framework
-version: 5.6
+version: 6.0
 ---
 
-# Skill Template Standard (v5.6)
+# Skill Template Standard (v6.0)
 
 ## Purpose
 
@@ -66,6 +66,24 @@ Every command the Generator needs. Copy-pasteable.
 When the Planner revises a skill:
 1. Increment `version` in frontmatter.
 2. Add entry under `## Revision Log`.
-3. Verify Patterns match updated Architecture.md.
+3. Verify Patterns match updated Architecture.md sections.
 
 Generator must NEVER modify skill files.
+
+## 5. Architecture.md Coupling (v6.0)
+
+Skills reference real types and endpoints from `Architecture.md`.
+The document is layered — every skill should declare which sections
+of Architecture it depends on, so the Planner knows which skills to
+revise when a section changes.
+
+When updating a skill because an Architecture section changed:
+1. Update the affected Patterns and Hard Rules.
+2. Re-read `Architecture.md ## Overview` and confirm the Overview
+   still summarises the system accurately. If a section was added,
+   removed, or substantially renamed, **update the Overview** so the
+   Generator's first read still sees a faithful snapshot.
+3. Bump the skill `version` and log the change in `## Revision Log`.
+
+The Overview is the only Architecture section the Generator always
+reads. Letting it drift defeats selective loading.
